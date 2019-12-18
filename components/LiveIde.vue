@@ -10,28 +10,13 @@
       </div>
       <div class="ide-body flex">
         <div class="ide-files py-3 px-3" style="width: 230px; background: #151718; color: #E6CD5E">
-
-          <!-- directories below -->
-          <div v-for="directory in directories" class="directory text-xs">
-            <div class="directory-name flex cursor-pointer" v-on:click="toggleDirectory(directory.id)">
-              <chevron-right-icon class="w-3" v-if="!directoryOpen(directory.id)"/>
-              <chevron-down-icon class="w-3" v-if="directoryOpen(directory.id)"/>
-              <folder-icon class="ml-1 w-3"/>
-              <div class="ml-1 relative" style="top: 3px;">{{ directory.name }}</div>
-            </div>
-            <div class="directory-items-container ml-5" v-if="directoryOpen(directory.id) && directory.files.length > 0">
-              <div class="directory-file flex cursor-pointer" v-for="file in directory.files" v-on:click="showCode(file.code)">
-                <file-icon class="ml-1 w-3"/>
-                <div class="ml-1 relative" style="top: 3px;">{{ file.name }}</div>
-              </div>
-            </div>
+          <div class="directory" v-for="directory in directories" v-bind:key="directory.name">
+            <directory v-bind:directory="directory" v-on:changeCode="changeCode"></directory>
           </div>
-
-          <!-- files below -->
-          <div class="directory-items-container ml-3 text-xs">
-            <div class="directory-file flex cursor-pointer" v-for="basicFile in files" v-on:click="showCode(basicFile.code)">
+          <div class="files text-xs cursor-pointer" style="color: #E6D6A8">
+            <div class="file flex" v-for="file in files" v-on:click="changeCode(file.code)">
               <file-icon class="ml-1 w-3"/>
-              <div class="ml-1 relative" style="top: 3px;">{{ basicFile.name }}</div>
+              <div class="ml-1 relative" style="top: 3px;">{{ file.name }}</div>
             </div>
           </div>
         </div>
@@ -57,6 +42,8 @@
 <script>
   import { ChevronRightIcon, ChevronDownIcon, FolderIcon, FileIcon } from 'vue-feather-icons'
 
+  import Directory from '~/components/FileSystem/Directory'
+
   // require styles
   import 'codemirror/lib/codemirror.css'
   import 'codemirror/theme/seti.css'
@@ -66,32 +53,44 @@
       FolderIcon,
       ChevronRightIcon,
       ChevronDownIcon,
-      FileIcon
+      FileIcon,
+      Directory
     },
 
     data () {
       return {
-        openDirectories: [],
+        socket: null,
 
         directories: [
           {
-            id: 'test-directory',
-            name: 'test directory',
-            directories: [],
+            name: 'first directory',
+            directories: [
+              {
+                name: 'first sub directory',
+                directories: [
+                  {
+                    name: 'first sub sub directory',
+                    directories: [],
+                    files: [],
+                    open: true
+                  }
+                ],
+                files: [
+                  {
+                    name: 'file-in-first-sub-directory.js',
+                    code: 'const firstSubFile = "test2";'
+                  }
+                ],
+                open: true
+              },
+            ],
             files: [
               {
-                name: 'file-in-directory.js',
-                code: 'const testDirectory = "test1234";'
-              },
-              {
-                name: 'file-in-directory-2.js',
-                code: 'const testDirectory = "test1234";'
-              },
-              {
-                name: 'file-in-directory-3.js',
-                code: 'const testDirectory = "test1234";'
+                name: 'file-in-first-directory.js',
+                code: 'const firstFile = "test1";'
               }
-            ]
+            ],
+            open: false
           }
         ],
 
@@ -127,25 +126,13 @@
         this.code = newCode
       },
 
-      toggleDirectory (id) {
-        if (this.openDirectories.indexOf(id) !== -1) {
-          this.openDirectories.splice(this.openDirectories.indexOf(id), 1)
-          return
-        }
-
-        // Put it in the openDirectories variable
-        this.openDirectories.push(id);
-
-        // Vue.js array trick
-        this.openDirectories.splice(0,0)
-      },
-
-      directoryOpen (id) {
-        return this.openDirectories.indexOf(id) !== -1
-      },
-
-      showCode (code) {
+      changeCode (code) {
         this.code = code
+      },
+
+      changeDirectories () {
+        console.log("changeDirectories() was called");
+        this.directories = []
       }
     },
 
@@ -156,8 +143,26 @@
     },
 
     mounted() {
-      console.log('this is current codemirror object', this.codemirror)
-      // you can use this.codemirror to do something...
+      this.socket = new WebSocket("ws://localhost:3600/");
+
+      this.socket.onopen = () => {
+        console.log("connection opened")
+      };
+
+      this.socket.onmessage = (e) => {
+        console.log("directories should now disappear");
+
+        let fs = JSON.parse(e.data);
+
+        console.log(fs);
+
+        this.directories = fs['directories'];
+        this.directories.splice(0,0);
+
+        this.files = fs['files'];
+        this.files.splice(0,0)
+
+      }
     }
   }
 </script>
