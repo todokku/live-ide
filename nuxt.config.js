@@ -63,6 +63,6 @@ module.exports = {
 
   server: {
     host: "localhost",
-    port: "3500"
+    port: "3000"
   }
 }
