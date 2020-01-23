@@ -1,6 +1,10 @@
 {
   "name": "ruudniew-live-ide",
   "version": "1.0.0",
+  "engines": {
+    "node": "12.7.0"
+    "npm": "6.10.2"
+  },
   "description": "Ruudniew live IDE",
   "author": "Ruud",
   "private": true,
